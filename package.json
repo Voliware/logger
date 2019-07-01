@@ -1,0 +1,33 @@
+{
+  "name": "@voliware/logger",
+  "version": "1.1.0",
+  "description": "A tiny Javascript logger with levels and several options. Supports Node and all modern Browsers",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha",
+    "build": "build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Voliware/logger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Voliware/logger/issues"
+  },
+  "homepage": "https://github.com/Voliware/logger",
+  "keywords": [
+    "log",
+    "logger",
+    "debug"
+  ],
+  "author": "Anthony Agostino",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^6.1.4",
+    "uglify-es": "^3.3.9"
+  },
+  "dependencies": {}
+}
