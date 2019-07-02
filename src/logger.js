@@ -163,14 +163,10 @@ class Logger {
     /**
     * Create a log message.
     * @param {string} message - message to log
-    * @param {number} [level=this.options.level] - log level; current level by default
+    * @param {number} level - log level
     * @return {Logger}
     */
-    createMessage(message, level = this.options.level){
-        if(level < this.options.level){
-            return;
-        }
-
+    createMessage(message, level){
         let msg = "";
         if(this.options.timestamp.state){
             msg += this.appendTimestamp();
@@ -186,9 +182,6 @@ class Logger {
         if(typeof message === "string"){
             msg += message;
         }
-        else {
-            msg += "logging object";
-        }
 
         return msg;
     }
@@ -197,18 +190,24 @@ class Logger {
     * Log a message.
     * @param {string} message - message to log
     * @param {number} [level=this.options.level] - log level; current level by default
-    * @return {Logger}
+    * @return {boolean} true if it logged, false otherwise
     */
     log(message, level = this.options.level){
+        if(level < this.options.level){
+            return false;
+        }
+
         let msg = this.createMessage(message, level);
 
         if(typeof message === "string"){
             console.log(msg);
         }
         else {
-            console.log(msg);
+            console.log("logging object");
             console.log(message);
         }
+
+        return true;
     }
 
     /**
