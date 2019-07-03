@@ -48,8 +48,19 @@ class Logger {
         };
         Object.assign(this.options, options);
 
+        this.setContext(this.options.context);
         this.setTimestampFormat(this.options.timestamp.format);
 
+        return this;
+    }
+
+    /**
+     * Set the logger name, which appears
+     * as the first item in the message after timestamp.
+     * @param {string} name 
+     */
+    setName(name){
+        this.name = name;
         return this;
     }
 
@@ -58,11 +69,16 @@ class Logger {
     * This could be set when printing logs from
     * a specific object, for example, to indicate
     * which object the logger is found in (aka its context).
-    * @param {string} context 
+    * @param {*} context 
     * @return {Logger}
     */
     setContext(context){
-        this.options.context = context;
+		if(typeof context === 'string'){
+			this.options.context = context;
+		}
+		else if(context && context.constructor){
+            this.options.context = context.constructor.name;
+		}
         return this;
     }
 
