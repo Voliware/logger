@@ -46,7 +46,7 @@ class Logger {
             },
             context: null
         };
-        Object.assign(this.options, options);
+        Object.extend(this.options, options);
 
         this.setContext(this.options.context);
         this.setTimestampFormat(this.options.timestamp.format);
@@ -89,6 +89,15 @@ class Logger {
     * @return {Logger}
     */
     setLogLevel(level){
+        if(typeof level === "string"){
+            level = Logger.level.stringmap.get(level);
+        }
+        
+        if(!Logger.level.isValidLevel(level)){
+            console.error("Logger.setLogLevel: invalid log level");
+            return this;
+        }
+
         this.options.level = level;
         return this;
     }
@@ -101,8 +110,18 @@ class Logger {
     * @return {Logger}
     */
     setTimestamp(options){
-        this.options.timestamp = options;
+        Object.extend(this.options.timestamp, options);
         this.setTimestampFormat(this.options.timestamp.format);
+        return this;
+    }
+    
+    /**
+     * Set the timestamp printing state
+     * @param {boolean} state 
+     * @return {Logger}
+     */
+    setTimestampState(state){
+        this.options.timestamp.state = state;
         return this;
     }
 
@@ -112,6 +131,15 @@ class Logger {
     * @return {Logger}
     */
     setTimestampFormat(format){
+        if(typeof format === "string"){
+            format = Logger.timestamp.stringmap.get(format);
+        }
+        
+        if(!Logger.timestamp.isValidTimestamp(format)){
+            console.error("Logger.setTimestampFormat: invalid timestamp");
+            return this;
+        }
+
         switch(format){
             case Logger.timestamp.utc:
                 this.appendTimestamp = this.appendUtcTimestamp;
@@ -288,12 +316,68 @@ Logger.level = {
         "ERR"
     ]
 };
+
+/**
+ * Map of strings to Logger levels
+ */
+Logger.level.stringmap = new Map()
+    .set("verbose", Logger.level.verbose)
+    .set("debug", Logger.level.debug)
+    .set("info", Logger.level.info)
+    .set("warning", Logger.level.warning)
+    .set("error", Logger.level.error);
+
+/**
+ * Check if the log level is valid
+ * @param {number} level 
+ * @return {boolean}
+ */
+Logger.level.isValidLevel = function(level){
+    return level >= Logger.level.verbose && level <= Logger.level.error;
+};
+
 Logger.timestamp = {
     utc: 0,
     locale: 1,
     localetime: 2,
     localedate: 3
 };
+
+/**
+ * Map of strings to Logger timestamps
+ */
+Logger.timestamp.stringmap = new Map()
+    .set("utc", Logger.timestamp.utc)
+    .set("locale", Logger.timestamp.locale)
+    .set("localetime", Logger.timestamp.localetime)
+    .set("localedate", Logger.timestamp.localedate);
+
+/**
+ * Check if the timestamp is valid
+ * @param {number} timestamp 
+ * @return {boolean}
+ */
+Logger.timestamp.isValidTimestamp = function(timestamp){
+    return timestamp >= Logger.timestamp.utc && timestamp <= Logger.timestamp.localedate;
+};
+
+if(typeof Object.extend != 'function'){
+    Object.extend = function(){
+        for(let i = 1; i < arguments.length; i++){
+            for(let key in arguments[i]){
+                if(arguments[i].hasOwnProperty(key)) { 
+                    if (typeof arguments[0][key] === 'object' && typeof arguments[i][key] === 'object') {
+                        Object.extend(arguments[0][key], arguments[i][key]);
+                    }
+                    else{
+                        arguments[0][key] = arguments[i][key];
+                    }
+                }
+            }
+        }
+        return arguments[0];	
+    }
+}
 
 if(typeof module !== "undefined"){
     module.exports = Logger;
