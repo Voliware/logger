@@ -8,6 +8,11 @@ let logger = new Logger("App", {
    timestamp: {
        state: true,
        format: Logger.timestamp.utc
+   },
+   output: {
+      console: true,
+      // node only
+      file: './log.txt'
    }
 });
 
