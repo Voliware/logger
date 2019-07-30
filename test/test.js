@@ -1,5 +1,16 @@
 const Logger = require('../index');
 const assert = require('assert')
+const fs = require('fs');
+
+const testfile = "./log.txt";
+try {
+    fs.accessSync(testfile);
+    fs.unlinkSync(testfile);
+}
+catch(e){
+    
+}
+
 
 it('sets the name from constructor options', () => {
     let name = "App";
@@ -65,13 +76,6 @@ it('creates a message at the error level', () => {
     assert.strictEqual(msg, "[ERR] [App] Test");
 });
 
-it('should not log debug when the log level is at info', () => {
-    let level = Logger.level.info;
-    let logger = new Logger("App", {level});
-    let result = logger.debug("Test");
-    assert.strictEqual(result, false);
-});
-
 it('creates a message with no context', () => {
     let logger = new Logger("App");
     let msg = logger.createMessage("Test", Logger.level.info);
@@ -92,4 +96,61 @@ it('creates a message with a UTC timestamp', () => {
     let date = msg.split(']')[0].replace('[', '').replace(']', '');
     let valid = regex.test(date);
     assert.strictEqual(valid, true);
+});
+
+it('creates a log file if it does not exist', async () => {
+    let logger = new Logger("App", {
+        output: {
+            console: false,
+            file:"./log.txt"
+        }
+    });
+    await logger.info("Test");
+    assert.strictEqual(fs.existsSync(testfile), true);
+});
+
+it('appends to the log file', async () => {
+    let logger = new Logger("App", {
+        output: {
+            console: false,
+            file:"./log.txt"
+        }
+    });
+
+    await logger.info("Test");
+    let file = fs.readFileSync(testfile).toString();
+    let contents = '[INF] [App] Test\r\n[INF] [App] Test\r\n';
+    assert.strictEqual(file, contents);
+});
+
+it('erases the log file', async () => {
+    let logger = new Logger("App", {
+        output: {
+            console: false,
+            file:"./log.txt"
+        }
+    });
+
+    await logger.eraseLogFile();
+    let file = fs.readFileSync(testfile).toString();
+    assert.strictEqual(file, '');
+});
+
+it('deletes the log file', async () => {
+    let logger = new Logger("App", {
+        output: {
+            console: false,
+            file:"./log.txt"
+        }
+    });
+
+    await logger.deleteLogfile();
+    try {
+        fs.accessSync(testfile);
+        assert.strictEqual(1, 0);
+    }
+    catch(e){
+        // we want it to fail
+        assert.strictEqual(1, 1);
+    }
 });

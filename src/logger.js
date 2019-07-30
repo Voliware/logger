@@ -28,28 +28,28 @@ class Logger {
     /**
     * Constructor
     * @param {string} name - name of the logger
-    * @param {object} options 
-    * @param {number} options.level - starting log level
-    * @param {object} options.timestamp - timestamp options
-    * @param {boolean} options.timestamp.state - whether to print timestamps
-    * @param {number} options.timestamp.format - timestamp format
-    * @param {string} options.context - optional context prepended before logger name
+    * @param {object} [options={}] 
+    * @param {number} [options.level=Logger.level.info] - starting log level
+    * @param {object|boolean} [options.timestamp] - timestamp options, or boolean for default time format
+    * @param {boolean} [options.timestamp.state=false] - whether to print timestamps
+    * @param {number} [options.timestamp.format=Logger.timestamp.locale] - timestamp format
+    * @param {string} [options.context=null] - optional context prepended before logger name
     * @return {Logger}
     */
     constructor(name, options = {}){
         this.name = name;
         this.options = {
             level: Logger.level.info,
+            context: null,
             timestamp: {
                 state: false,
                 format: Logger.timestamp.locale
-            },
-            context: null
+            }
         };
         Object.extend(this.options, options);
 
         this.setContext(this.options.context);
-        this.setTimestampFormat(this.options.timestamp.format);
+        this.setTimestamp(this.options.timestamp);
 
         return this;
     }
@@ -104,13 +104,19 @@ class Logger {
 
     /**
     * Set any timestamp options
-    * @param {object} options
-    * @param {boolean} options.state - whether to print timestamps
-    * @param {number} options.format - timestamp format
+    * @param {object|boolean} options - options or true to use default timestamp
+    * @param {boolean} [options.state] - whether to print timestamps
+    * @param {number} [options.format] - timestamp format
     * @return {Logger}
     */
     setTimestamp(options){
-        Object.extend(this.options.timestamp, options);
+        if(typeof options === "boolean"){
+            this.options.timestamp = {
+                state: options,
+                format: Logger.timestamp.locale
+            };
+        }
+        this.setTimestampState(this.options.timestamp.state);
         this.setTimestampFormat(this.options.timestamp.format);
         return this;
     }
@@ -234,24 +240,31 @@ class Logger {
     * Log a message.
     * @param {string} message - message to log
     * @param {number} [level=this.options.level] - log level; current level by default
-    * @return {boolean} true if it logged, false otherwise
+    * @return {Logger}
     */
     log(message, level = this.options.level){
         if(level < this.options.level){
-            return false;
+            return this;
         }
 
         let msg = this.createMessage(message, level);
+        return this.logMessage(msg);
+    }
 
+    /**
+    * Log a message.
+    * @param {string} message - message to log
+    * @return {Logger}
+    */
+    logMessage(message){
         if(typeof message === "string"){
-            console.log(msg);
+            console.log(message);
         }
         else {
             console.log("logging object");
             console.log(message);
         }
-
-        return true;
+        return this;
     }
 
     /**
