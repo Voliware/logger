@@ -193,7 +193,7 @@ class Logger {
     }
 
     /**
-    * Append a UTC timestamp.
+    * Append a locale time timestamp.
     * eg "10:43:06 AM"
     * @return {Logger}
     */
@@ -237,7 +237,8 @@ class Logger {
     }
 
     /**
-    * Log a message.
+    * Log a message. Will do nothing if the current
+    * log level is greater than the specified one.
     * @param {string} message - message to log
     * @param {number} [level=this.options.level] - log level; current level by default
     * @return {Logger}
@@ -252,7 +253,8 @@ class Logger {
     }
 
     /**
-    * Log a message.
+    * Log a message. 
+    * This is the actual log output function.
     * @param {string} message - message to log
     * @return {Logger}
     */

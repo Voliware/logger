@@ -40,7 +40,7 @@ class NodeLogger extends Logger {
             }
         };
         super(name, Object.extend(defaults, options));
-        if(!this.isNodeEnv){
+        if(!this.isNodeEnv()){
             throw new Error("Not useable in non-node environment");
         }
         return this;
