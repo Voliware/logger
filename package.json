@@ -1,6 +1,6 @@
 {
   "name": "@voliware/logger",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "A tiny Javascript logger with levels and several options. Supports Node and all modern Browsers",
   "main": "index.js",
   "directories": {
@@ -26,8 +26,9 @@
   "author": "Anthony Agostino",
   "license": "MIT",
   "devDependencies": {
-    "mocha": "^6.2.0",
-    "uglify-es": "^3.3.9"
+    "mocha": "^6.2.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@voliware/node-build": "^1.0.3"
+  }
 }
