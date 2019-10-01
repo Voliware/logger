@@ -1,5 +1,5 @@
 const NodeBuild = require('@voliware/node-build');
-const version = "1.4.3";
+const version = require('./package.json').version;
 const name = "Logger";
 const input = './src/logger.js';
 const output = './dist/logger.min.js';

@@ -1,6 +1,6 @@
 {
   "name": "@voliware/logger",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "A tiny Javascript logger with levels and several options. Supports Node and all modern Browsers",
   "main": "index.js",
   "directories": {

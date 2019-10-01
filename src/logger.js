@@ -248,7 +248,10 @@ class Logger {
             return this;
         }
 
-        let msg = this.createMessage(message, level);
+        let msg = (typeof message === "string")
+            ? this.createMessage(message, level)
+            : message;
+            
         return this.logMessage(msg);
     }
 
