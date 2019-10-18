@@ -26,7 +26,7 @@ class NodeLogger extends Logger {
     * @param {object|boolean} [options.timestamp] - timestamp options, or boolean for default time format
     * @param {boolean} [options.timestamp.state=false] - whether to print timestamps
     * @param {number} [options.timestamp.format=Logger.timestamp.locale] - timestamp format
-    * @param {string} [options.context=null] - optional context prepended before logger name
+    * @param {string} [options.context=null] - optional context appended after logger name
     * @param {object} [options.output]
     * @param {boolean} [options.output.console=true] - whether to output to the console
     * @param {string} [options.output.file=""] - a file to save the log to, or blank for none

@@ -33,7 +33,7 @@ class Logger {
     * @param {object|boolean} [options.timestamp] - timestamp options, or boolean for default time format
     * @param {boolean} [options.timestamp.state=false] - whether to print timestamps
     * @param {number} [options.timestamp.format=Logger.timestamp.locale] - timestamp format
-    * @param {string} [options.context=null] - optional context prepended before logger name
+    * @param {string} [options.context=null] - optional context appended after logger name
     * @return {Logger}
     */
     constructor(name, options = {}){
@@ -48,7 +48,6 @@ class Logger {
         };
         Object.extend(this.options, options);
 
-        this.setContext(this.options.context);
         this.setTimestamp(this.options.timestamp);
 
         return this;
@@ -61,24 +60,6 @@ class Logger {
      */
     setName(name){
         this.name = name;
-        return this;
-    }
-
-    /**
-    * Set the logger context. 
-    * This could be set when printing logs from
-    * a specific object, for example, to indicate
-    * which object the logger is found in (aka its context).
-    * @param {*} context 
-    * @return {Logger}
-    */
-    setContext(context){
-		if(typeof context === 'string'){
-			this.options.context = context;
-		}
-		else if(context && context.constructor){
-            this.options.context = context.constructor.name;
-		}
         return this;
     }
 
