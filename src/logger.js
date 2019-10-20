@@ -31,6 +31,7 @@ class Logger {
     * @param {object} [options={}] 
     * @param {number} [options.level=Logger.level.info] - starting log level
     * @param {object|boolean} [options.timestamp] - timestamp options, or boolean for default time format
+    * @param {boolean} [options.objectsToString=false] - whether to print objects using .toString()
     * @param {boolean} [options.timestamp.state=false] - whether to print timestamps
     * @param {number} [options.timestamp.format=Logger.timestamp.locale] - timestamp format
     * @param {string} [options.context=null] - optional context appended after logger name
@@ -41,15 +42,15 @@ class Logger {
         this.options = {
             level: Logger.level.info,
             context: null,
+            objectsToString: false,
             timestamp: {
                 state: false,
                 format: Logger.timestamp.locale
             }
         };
         Object.extend(this.options, options);
-
+        this.setLogLevel(this.options.level);
         this.setTimestamp(this.options.timestamp);
-
         return this;
     }
 
@@ -243,11 +244,10 @@ class Logger {
     * @return {Logger}
     */
     logMessage(message){
-        if(typeof message === "string"){
-            console.log(message);
+        if(typeof message === "object" && this.options.objectsToString){
+            console.log(message.toString());
         }
         else {
-            console.log("logging object");
             console.log(message);
         }
         return this;
