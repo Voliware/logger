@@ -16,7 +16,6 @@ const endOfLine = require('os').EOL;
     * });
  */
 class NodeLogger extends Logger {
-
     
     /**
     * Constructor
@@ -43,6 +42,7 @@ class NodeLogger extends Logger {
         if(!this.isNodeEnv()){
             throw new Error("Not useable in non-node environment");
         }
+        this.fileIsValid = this.isValidFilepath(this.options.output.file);
         return this;
     }
     
@@ -60,7 +60,7 @@ class NodeLogger extends Logger {
      * @return {boolean} true if it is
      */
     isValidFilepath(filepath){
-        return filepath && filepath !== "";
+        return this.fileIsValid = (typeof filepath === "string" && filepath !== "");
     }
 
     /**
@@ -83,7 +83,7 @@ class NodeLogger extends Logger {
             this.options.output.file = filepath;
         }
         else {
-            console.log("Cannot enable file output: invalid output file");
+            console.error("Cannot enable file output: invalid output file");
             this.options.output.file = "";
         }
         return this;
@@ -93,7 +93,7 @@ class NodeLogger extends Logger {
      * Append text to the output file.
      * Automatically adds an end of line character.
      * @param {string} text - text to append
-     * @return {Promise}
+     * @return {Promise<NodeLogger>}
      */
     appendToLogFile(text){
         return new Promise((resolve, reject) => {
@@ -102,14 +102,14 @@ class NodeLogger extends Logger {
                     reject(err);
                     return;
                 }
-                resolve();
+                resolve(this);
             }); 
         });
     }
 
     /**
      * Erase the log file
-     * @return {Promise}
+     * @return {Promise<NodeLogger>}
      */
     eraseLogFile(){
         return new Promise((resolve, reject) => {
@@ -118,14 +118,14 @@ class NodeLogger extends Logger {
                     reject(err);
                     return;
                 }
-                resolve();
+                resolve(this);
             }); 
         });
     }
 
     /**
      * Delete the log file
-     * @return {Promise}
+     * @return {Promise<NodeLogger>}
      */
     deleteLogfile(){
         return new Promise((resolve, reject) => {
@@ -143,17 +143,19 @@ class NodeLogger extends Logger {
      * Log a message.
      * If console logging is enabled, logs to the console.
      * If file output is valid, logs to the file.
+     * Can do both.
      * @param {string} message - message to log
-     * @return {NodeLogger}
+     * @async
+     * @return {Promise<NodeLogger>}
      */
-    logMessage(message){
+    async logMessage(message){
         if(this.options.output.console){
             super.logMessage(message);
-            return this;
         }
-        if(this.isValidFilepath(this.options.output.file)){
+        if(this.fileIsValid){
             return this.appendToLogFile(message);
         }
+        return this;
     }
 }
 

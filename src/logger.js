@@ -39,6 +39,7 @@ class Logger {
     */
     constructor(name, options = {}){
         this.name = name;
+        this.enabled = true;
         this.options = {
             level: Logger.level.info,
             context: null,
@@ -52,6 +53,40 @@ class Logger {
         this.setLogLevel(this.options.level);
         this.setTimestamp(this.options.timestamp);
         return this;
+    }
+
+    /**
+     * Get the logger's enabled state.
+     * @returns {boolean} true if enabled
+     */
+    getEnabled(){
+        return this.enabled;
+    }
+
+    /**
+     * Set the logger's enabled state.
+     * @param {boolean} enabled 
+     * @returns {Logger}
+     */
+    setEnabled(enabled){
+        this.enabled = enabled;
+        return this;
+    }
+
+    /**
+     * Enable the logger
+     * @returns {Logger}
+     */
+    enable(){
+        return this.setEnabled(true);
+    }
+
+    /**
+     * Disable the logger
+     * @returns {Logger}
+     */
+    disable(){
+        return this.setEnabled(false);
     }
 
     /**
@@ -226,7 +261,7 @@ class Logger {
     * @return {Logger}
     */
     log(message, level = this.options.level){
-        if(level < this.options.level){
+        if(!this.enabled || level < this.options.level){
             return this;
         }
 

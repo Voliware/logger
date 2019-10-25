@@ -136,6 +136,21 @@ it('erases the log file', async () => {
     Assert.strictEqual(file, '');
 });
 
+it('does not log if disabled',async () => {
+    let logger = new Logger("App", {
+        output: {
+            console: false,
+            file:"./log.txt"
+        }
+    });
+
+    logger.disable();
+    await logger.info("Test");
+    let file = Fs.readFileSync(testfile).toString();
+    let contents = '';
+    Assert.strictEqual(file, contents);
+});
+
 it('deletes the log file', async () => {
     let logger = new Logger("App", {
         output: {
