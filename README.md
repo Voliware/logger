@@ -21,6 +21,20 @@ let logger = new Logger("App", {
 logger.debug("Initializing"); 
 ```
 
+### API
+```js
+logger.verbose("verbose log");
+logger.debug("debug log");
+logger.info("info log");
+logger.warning("warning log");
+logger.error("error log");
+logger.log("hello", "debug");
+logger.log("hello again", Logger.level.debug);
+logger.disable();
+logger.enable();
+logger.level("info");
+```
+
 ## Node
 Install with node package manager
 ```js
