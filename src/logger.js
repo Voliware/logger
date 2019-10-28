@@ -257,11 +257,19 @@ class Logger {
     * Log a message. Will do nothing if the current
     * log level is greater than the specified one.
     * @param {string} message - message to log
-    * @param {number} [level=this.options.level] - log level; current level by default
+    * @param {number|string} [level=this.options.level] - log level; current level by default
     * @return {Logger}
     */
     log(message, level = this.options.level){
-        if(!this.enabled || level < this.options.level){
+        if(!this.enabled){
+            return this;
+        }
+
+        if(typeof level === "string"){
+            level = Logger.level.stringmap.get(level);
+        }
+
+        if(level < this.options.level){
             return this;
         }
 

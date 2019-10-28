@@ -11,7 +11,6 @@ catch(e){
     
 }
 
-
 it('sets the name from constructor options', () => {
     let name = "App";
     let logger = new Logger(name);
