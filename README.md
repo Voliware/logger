@@ -32,7 +32,7 @@ logger.log("hello", "debug");
 logger.log("hello again", Logger.level.debug);
 logger.disable();
 logger.enable();
-logger.level("info");
+logger.setLevel("info");
 ```
 
 ## Node

@@ -40,6 +40,12 @@ it('sets the context from constructor options', () => {
     Assert.strictEqual(logger.options.context, context);
 });
 
+it('sets the level from setLevel', () => {
+    let logger = new Logger("App");
+    logger.setLevel("verbose");
+    Assert.strictEqual(logger.options.level, Logger.level.verbose);
+});
+
 it('creates a message at the verbose level', () => {
     let level = Logger.level.verbose;
     let logger = new Logger("App");

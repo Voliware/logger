@@ -50,7 +50,7 @@ class Logger {
             }
         };
         Object.extend(this.options, options);
-        this.setLogLevel(this.options.level);
+        this.setLevel(this.options.level);
         this.setTimestamp(this.options.timestamp);
         return this;
     }
@@ -105,13 +105,13 @@ class Logger {
     * @param {number} level 
     * @return {Logger}
     */
-    setLogLevel(level){
+    setLevel(level){
         if(typeof level === "string"){
             level = Logger.level.stringmap.get(level);
         }
         
         if(!Logger.level.isValidLevel(level)){
-            console.error("Logger.setLogLevel: invalid log level");
+            console.error("Failed to set level: invalid level");
             return this;
         }
 
@@ -159,7 +159,7 @@ class Logger {
         }
         
         if(!Logger.timestamp.isValidTimestamp(format)){
-            console.error("Logger.setTimestampFormat: invalid timestamp");
+            console.error("Failed to set timestamp: invalid format");
             return this;
         }
 
