@@ -14,7 +14,7 @@ describe('Logger', function() {
         this.filelogger = new Logger.FileLogger("App", {
             filepath: this.testfile, 
             console: false, 
-            timestamp: false
+            timestamp: Logger.LoggerMessage.timestamp.none
         });
 
         // Mongo DB Logger
@@ -32,7 +32,7 @@ describe('Logger', function() {
         this.mongologger = new Logger.MongoDbLogger("App", {
             collection: this.collection,
             console: false, 
-            timestamp: false
+            timestamp: Logger.LoggerMessage.timestamp.none
         });
     });
 
@@ -41,43 +41,43 @@ describe('Logger', function() {
     });
 
     it('creates a message at the verbose level', function() {
-        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const logger = new Logger.ConsoleLogger("App", {timestamp: Logger.LoggerMessage.timestamp.none});
         const message = logger.createMessage("Test", Logger.LoggerMessage.level.verbose);
         Assert.strictEqual(message.toString(), "[VRB] [App] Test");
     });
 
     it('creates a message at the debug level', function() {
-        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const logger = new Logger.ConsoleLogger("App", {timestamp: Logger.LoggerMessage.timestamp.none});
         const message = logger.createMessage("Test", Logger.LoggerMessage.level.debug);
         Assert.strictEqual(message.toString(), "[DBG] [App] Test");
     });
 
     it('creates a message at the info level', function() {
-        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const logger = new Logger.ConsoleLogger("App", {timestamp: Logger.LoggerMessage.timestamp.none});
         const message = logger.createMessage("Test", Logger.LoggerMessage.level.info);
         Assert.strictEqual(message.toString(), "[INF] [App] Test");
     });
 
     it('creates a message at the warning level', function() {
-        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const logger = new Logger.ConsoleLogger("App", {timestamp: Logger.LoggerMessage.timestamp.none});
         const message = logger.createMessage("Test", Logger.LoggerMessage.level.warning);
         Assert.strictEqual(message.toString(), "[WRN] [App] Test");
     });
 
     it('creates a message at the error level', function() {
-        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const logger = new Logger.ConsoleLogger("App", {timestamp: Logger.LoggerMessage.timestamp.none});
         const message = logger.createMessage("Test", Logger.LoggerMessage.level.error);
         Assert.strictEqual(message.toString(), "[ERR] [App] Test");
     });
 
     it('creates a message with no context', function() {
-        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const logger = new Logger.ConsoleLogger("App", {timestamp: Logger.LoggerMessage.timestamp.none});
         const message = logger.createMessage("Test", Logger.LoggerMessage.level.info);
         Assert.strictEqual(message.toString(), "[INF] [App] Test");
     });
 
     it('creates a message with context', function() {
-        const logger = new Logger.ConsoleLogger("App", {context:"User", timestamp: false});
+        const logger = new Logger.ConsoleLogger("App", {context:"User", timestamp: Logger.LoggerMessage.timestamp.none});
         const message = logger.createMessage("Test", Logger.LoggerMessage.level.info);
         Assert.strictEqual(message.toString(), "[INF] [App] [User] Test");
     });
@@ -139,22 +139,22 @@ describe('Logger', function() {
     it('logs to the collection', async function() {
         await this.mongologger.info("Test 1");
         const data = await this.collection.findOne();
-        Assert.strictEqual(data.context, '');
-        Assert.strictEqual(data.level, '[INF] ');
-        Assert.strictEqual(data.name, '[App] ');
+        Assert.strictEqual(data.context, null);
+        Assert.strictEqual(data.level, 'INF');
+        Assert.strictEqual(data.name, 'App');
         Assert.strictEqual(data.text, 'Test 1');
-        Assert.strictEqual(data.timestamp, '');
+        Assert.strictEqual(data.timestamp, null);
     });
 
     it('deletes the first document', async function() {
         await this.mongologger.info("Test 2");
         await this.mongologger.deleteFirstDocument();
         const data = await this.collection.findOne();
-        Assert.strictEqual(data.context, '');
-        Assert.strictEqual(data.level, '[INF] ');
-        Assert.strictEqual(data.name, '[App] ');
+        Assert.strictEqual(data.context, null);
+        Assert.strictEqual(data.level, 'INF');
+        Assert.strictEqual(data.name, 'App');
         Assert.strictEqual(data.text, 'Test 2');
-        Assert.strictEqual(data.timestamp, '');
+        Assert.strictEqual(data.timestamp, null);
     });
 
     it('clears the collection', async function() {

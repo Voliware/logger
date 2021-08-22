@@ -25,7 +25,7 @@ class MongoDbLogger extends Logger {
     constructor(name, {
         level = LoggerMessage.level.info,
         enabled = true,
-        context = null,
+        context = undefined,
         timestamp = LoggerMessage.timestamp.locale,
         maxlogs = 0,
         collection = null,
@@ -73,7 +73,6 @@ class MongoDbLogger extends Logger {
 
         this.collection.insertOne(message);
     }
-
 
     /**
      * Process a message just before logging

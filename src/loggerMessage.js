@@ -5,26 +5,26 @@ class LoggerMessage {
 
     /**
      * Constructor
-     * @param {Object} options
-     * @param {String|Null} options.context
-     * @param {Number|Null} options.level
-     * @param {String|Null} options.name
-     * @param {String} options.text
-     * @param {Number|Boolean} options.timestamp
+     * @param {Object} [options={}]
+     * @param {String|Null} [options.context=undefined]
+     * @param {Number|Null} [options.level=undefined]
+     * @param {String|Null} [options.name=undefined]
+     * @param {String} [options.text=undefined]
+     * @param {Number|Boolean} [options.timestamp=undefined]
      */
     constructor({
-        context = null,
-        level = null,
-        name = null,
-        text = '',
-        timestamp = null
-    }){
+        context = undefined,
+        level = undefined,
+        name = undefined,
+        text = undefined,
+        timestamp = undefined
+    }={}){
         
-        this.context = context ? `[${context}] ` : '';
-        this.level = typeof level !== null ? `[${LoggerMessage.level.string[level]}] ` : '';
-        this.name = name ? `[${name}] ` : '';
+        this.context = context;
+        this.level = typeof level !== 'undefined' ? LoggerMessage.level.string[level] : level;
+        this.name = name;
         this.text = text;
-        this.timestamp = typeof timestamp !== null ? this.generateTimestamp(timestamp) : '';
+        this.timestamp = typeof timestamp !== 'undefined' ? this.generateTimestamp(timestamp) : timestamp;
     }
 
     /**
@@ -34,63 +34,19 @@ class LoggerMessage {
     generateTimestamp(format){
         switch(format){
             case LoggerMessage.timestamp.utc:
-                return this.generateUtcTimestamp();
+                return new Date().toUTCString();
             case LoggerMessage.timestamp.localedate:
-                return this.generateLocaleDateTimestamp();
+                return new Date().toLocaleDateString();
             case LoggerMessage.timestamp.localetime:
-                return this.generateLocaleTimeTimestamp();
+                return new Date().toLocaleTimeString();
             case LoggerMessage.timestamp.numeric:
-                return this.generateNumericTimestamp();
+                generateNumericTimestamp();
             case LoggerMessage.timestamp.locale:
-                return this.generateLocaleTimestamp();
+                return new Date().toLocaleString();
+            case LoggerMessage.timestamp.none:
             default:
-                return '';
+                return undefined;
         }
-    }
-
-    /**
-     * Generate a UTC timestamp.
-     * eg "Mon, 01 Jul 2019 14:43:35 GMT"
-     * @return {String}
-     */
-    generateUtcTimestamp(){
-        return `[${(new Date().toUTCString())}] `;
-    }
-
-    /**
-     * Generate a locale timestamp.
-     * eg "7/1/2019, 10:43:26 AM"
-     * @return {String}
-     */
-    generateLocaleTimestamp(){
-        return `[${(new Date().toLocaleString())}] `;
-    }
-
-    /**
-     * Generate a locale time timestamp.
-     * eg "10:43:06 AM"
-     * @return {String}
-     */
-    generateLocaleTimeTimestamp(){
-        return `[${(new Date().toLocaleTimeString())}] `;
-    }
-
-    /**
-     * Generate a locale date timestamp.
-     * eg "7/1/2019"
-     * @return {String}
-     */
-    generateLocaleDateTimestamp(){
-        return `[${(new Date().toLocaleDateString())}] `;
-    }
-
-    /**
-     * Generate a numerical timestamp.
-     * eg 1628828513146
-     * @return {String}
-     */
-    generateNumericTimestamp(){
-        return `[${Date.now()}] `;
     }
 
     /**
@@ -98,7 +54,13 @@ class LoggerMessage {
      * @returns {String}
      */
     toString(){
-        return `${this.timestamp}${this.level}${this.name}${this.context}${this.text}`;
+        const timestamp = this.timestamp ? `[${this.timestamp}] ` : '';
+        const level = this.level ? `[${this.level}] ` : '';
+        const name = this.name ? `[${this.name}] ` : '';
+        const context = this.context ? `[${this.context}] ` : '';
+        const text = this.text ? this.text : '';
+        
+        return `${timestamp}${level}${name}${context}${text}`;
     }
 }
 
@@ -137,11 +99,12 @@ LoggerMessage.level.stringmap = new Map()
  * @type {Object}
  */
 LoggerMessage.timestamp = {
-    utc: 0,
-    locale: 1,
-    localetime: 2,
-    localedate: 3,
-    numeric: 4
+    none: 0,
+    utc: 1,
+    locale: 2,
+    localetime: 3,
+    localedate: 4,
+    numeric: 5
 };
 
 /**
@@ -149,6 +112,7 @@ LoggerMessage.timestamp = {
  * @type {Map<String, Number>}
  */
 LoggerMessage.timestamp.stringmap = new Map()
+    .set("none", LoggerMessage.timestamp.none)
     .set("utc", LoggerMessage.timestamp.utc)
     .set("locale", LoggerMessage.timestamp.locale)
     .set("localetime", LoggerMessage.timestamp.localetime)
