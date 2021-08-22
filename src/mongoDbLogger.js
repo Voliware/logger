@@ -1,6 +1,6 @@
 const {ObjectId} = require('mongodb');
 const Logger = require('./logger');
-const LoggerMessage = require('./LoggerMessage');
+const LoggerMessage = require('./loggerMessage');
 
 /**
  * Logs to a MongoDB collection

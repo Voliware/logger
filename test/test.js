@@ -136,7 +136,7 @@ describe('Logger', function() {
         Assert.strictEqual(exists, false);
     });
 
-    it('logs to the colletion', async function() {
+    it('logs to the collection', async function() {
         await this.mongologger.info("Test 1");
         const data = await this.collection.findOne();
         Assert.strictEqual(data.context, '');
@@ -157,7 +157,7 @@ describe('Logger', function() {
         Assert.strictEqual(data.timestamp, '');
     });
 
-    it('clears the colletion', async function() {
+    it('clears the collection', async function() {
         await this.mongologger.clear();
         const data = await this.collection.findOne();
         Assert.strictEqual(data, undefined);

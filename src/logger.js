@@ -1,5 +1,5 @@
 if(typeof module !== "undefined"){
-    LoggerMessage = require('./LoggerMessage');
+    LoggerMessage = require('./loggerMessage');
 }
 
 /**
