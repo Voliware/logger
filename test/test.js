@@ -1,176 +1,165 @@
 const Assert = require('assert');
 const Fs = require('fs');
 const Logger = require('../index');
+const MongoClient = require('mongodb').MongoClient;
+const Path = require('path');
 
-const testfile = "./log.txt";
-try {
-    Fs.accessSync(testfile);
-    Fs.unlinkSync(testfile);
-}
-catch(e){
-    
-}
+describe('Logger', function() {
 
-it('sets the name from constructor options', () => {
-    let name = "App";
-    let logger = new Logger(name);
-    Assert.strictEqual(logger.name, name);
-});
+    before(async function() {
+        // File logger
+        this.testfile = Path.join(__dirname, "test.log");
+        try {Fs.unlinkSync(this.testfile);}
+        catch(e){}
+        this.filelogger = new Logger.FileLogger("App", {
+            filepath: this.testfile, 
+            console: false, 
+            timestamp: false
+        });
 
-it('sets the level from constructor options', () => {
-    let level = Logger.level.error;
-    let logger = new Logger("App", {level});
-    Assert.strictEqual(logger.options.level, level);
-});
-
-it('sets the timestamp state from constructor options', () => {
-    let logger = new Logger("App", {timestamp: {state: true}});
-    Assert.strictEqual(logger.options.timestamp.state, true);
-});
-
-it('sets the timestamp format from constructor options', () => {
-    let format = Logger.timestamp.utc;
-    let logger = new Logger("App", {timestamp: {format}});
-    Assert.strictEqual(logger.options.timestamp.format, format);
-});
-
-it('sets the context from constructor options', () => {
-    let context = "User";
-    let logger = new Logger("App", {context});
-    Assert.strictEqual(logger.options.context, context);
-});
-
-it('sets the level from setLevel', () => {
-    let logger = new Logger("App");
-    logger.setLevel("verbose");
-    Assert.strictEqual(logger.options.level, Logger.level.verbose);
-});
-
-it('creates a message at the verbose level', () => {
-    let level = Logger.level.verbose;
-    let logger = new Logger("App");
-    let msg = logger.createMessage("Test", level);
-    Assert.strictEqual(msg, "[VRB] [App] Test");
-});
-
-it('creates a message at the debug level', () => {
-    let level = Logger.level.debug;
-    let logger = new Logger("App");
-    let msg = logger.createMessage("Test", level);
-    Assert.strictEqual(msg, "[DBG] [App] Test");
-});
-
-it('creates a message at the info level', () => {
-    let level = Logger.level.info;
-    let logger = new Logger("App");
-    let msg = logger.createMessage("Test", level);
-    Assert.strictEqual(msg, "[INF] [App] Test");
-});
-
-it('creates a message at the warning level', () => {
-    let level = Logger.level.warning;
-    let logger = new Logger("App");
-    let msg = logger.createMessage("Test", level);
-    Assert.strictEqual(msg, "[WRN] [App] Test");
-});
-
-it('creates a message at the error level', () => {
-    let level = Logger.level.error;
-    let logger = new Logger("App");
-    let msg = logger.createMessage("Test", level);
-    Assert.strictEqual(msg, "[ERR] [App] Test");
-});
-
-it('creates a message with no context', () => {
-    let logger = new Logger("App");
-    let msg = logger.createMessage("Test", Logger.level.info);
-    Assert.strictEqual(msg, "[INF] [App] Test");
-});
-
-it('creates a message with context', () => {
-    let logger = new Logger("App", {context:"User"});
-    let msg = logger.createMessage("Test", Logger.level.info);
-    Assert.strictEqual(msg, "[INF] [App] [User] Test");
-});
-
-it('creates a message with a UTC timestamp', () => {
-    let format = Logger.timestamp.utc;
-    let logger = new Logger("App", {timestamp: {state:true, format}});
-    let msg = logger.createMessage("Test");
-    let regex = /(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\,\s\d{2}\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4}\s\d{2}:\d{2}:\d{2}\sGMT/;
-    let date = msg.split(']')[0].replace('[', '').replace(']', '');
-    let valid = regex.test(date);
-    Assert.strictEqual(valid, true);
-});
-
-it('creates a log file if it does not exist', async () => {
-    let logger = new Logger("App", {
-        output: {
-            console: false,
-            file:"./log.txt"
-        }
-    });
-    await logger.info("Test");
-    Assert.strictEqual(Fs.existsSync(testfile), true);
-});
-
-it('appends to the log file', async () => {
-    let logger = new Logger("App", {
-        output: {
-            console: false,
-            file:"./log.txt"
-        }
+        // Mongo DB Logger
+        const url = "mongodb://localhost:27017/logger-testing?retryWrites=true&w=majority"
+        this.mongoclient = new MongoClient(url, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        await this.mongoclient.connect();
+        this.db = this.mongoclient.db("logger-testing");
+        await this.db.createCollection("logs").catch(error => {
+            // Already exists
+        })
+        this.collection = this.db.collection('logs')
+        this.mongologger = new Logger.MongoDbLogger("App", {
+            collection: this.collection,
+            console: false, 
+            timestamp: false
+        });
     });
 
-    await logger.info("Test");
-    let file = Fs.readFileSync(testfile).toString();
-    let contents = '[INF] [App] Test\r\n[INF] [App] Test\r\n';
-    Assert.strictEqual(file, contents);
-});
-
-it('erases the log file', async () => {
-    let logger = new Logger("App", {
-        output: {
-            console: false,
-            file:"./log.txt"
-        }
+    after(function() { 
+        this.mongoclient.close();
     });
 
-    await logger.eraseLogFile();
-    let file = Fs.readFileSync(testfile).toString();
-    Assert.strictEqual(file, '');
-});
-
-it('does not log if disabled',async () => {
-    let logger = new Logger("App", {
-        output: {
-            console: false,
-            file:"./log.txt"
-        }
+    it('creates a message at the verbose level', function() {
+        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const message = logger.createMessage("Test", Logger.LoggerMessage.level.verbose);
+        Assert.strictEqual(message.toString(), "[VRB] [App] Test");
     });
 
-    logger.disable();
-    await logger.info("Test");
-    let file = Fs.readFileSync(testfile).toString();
-    let contents = '';
-    Assert.strictEqual(file, contents);
-});
-
-it('deletes the log file', async () => {
-    let logger = new Logger("App", {
-        output: {
-            console: false,
-            file:"./log.txt"
-        }
+    it('creates a message at the debug level', function() {
+        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const message = logger.createMessage("Test", Logger.LoggerMessage.level.debug);
+        Assert.strictEqual(message.toString(), "[DBG] [App] Test");
     });
 
-    await logger.deleteLogfile();
-    try {
-        Fs.accessSync(testfile);
-        Assert.strictEqual(1, 0);
-    }
-    catch(e){
-        // we want it to fail
-        Assert.strictEqual(1, 1);
-    }
+    it('creates a message at the info level', function() {
+        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const message = logger.createMessage("Test", Logger.LoggerMessage.level.info);
+        Assert.strictEqual(message.toString(), "[INF] [App] Test");
+    });
+
+    it('creates a message at the warning level', function() {
+        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const message = logger.createMessage("Test", Logger.LoggerMessage.level.warning);
+        Assert.strictEqual(message.toString(), "[WRN] [App] Test");
+    });
+
+    it('creates a message at the error level', function() {
+        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const message = logger.createMessage("Test", Logger.LoggerMessage.level.error);
+        Assert.strictEqual(message.toString(), "[ERR] [App] Test");
+    });
+
+    it('creates a message with no context', function() {
+        const logger = new Logger.ConsoleLogger("App", {timestamp: false});
+        const message = logger.createMessage("Test", Logger.LoggerMessage.level.info);
+        Assert.strictEqual(message.toString(), "[INF] [App] Test");
+    });
+
+    it('creates a message with context', function() {
+        const logger = new Logger.ConsoleLogger("App", {context:"User", timestamp: false});
+        const message = logger.createMessage("Test", Logger.LoggerMessage.level.info);
+        Assert.strictEqual(message.toString(), "[INF] [App] [User] Test");
+    });
+
+    it('creates a message with a UTC timestamp', function() {
+        const logger = new Logger.ConsoleLogger("App", {timestamp: Logger.LoggerMessage.timestamp.utc});
+        const message = logger.createMessage("Test").toString();
+        const regex = /(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\,\s\d{2}\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4}\s\d{2}:\d{2}:\d{2}\sGMT/;
+        const date = message.split(']')[0].replace('[', '').replace(']', '');
+        const valid = regex.test(date);
+        Assert.strictEqual(valid, true);
+    });
+
+    it('creates a log file if it does not exist', async function() {
+        await this.filelogger.info("First Test");
+        const exists = Fs.existsSync(this.testfile);
+        Assert.strictEqual(exists, true);
+    });
+
+    it('appends to the log file', async function() {
+        await this.filelogger.info("Second Test");
+        const file = Fs.readFileSync(this.testfile).toString();
+        const contents = '[INF] [App] First Test\r\n[INF] [App] Second Test\r\n';
+        Assert.strictEqual(file, contents);
+    });
+
+    it('counts filesize correctly', async function() {
+        const stats = Fs.statSync(this.testfile);
+        Assert.strictEqual(stats.size, this.filelogger.filesize);
+    });
+
+    it('deletes the first line', async function() {
+        await this.filelogger.deleteFirstLine();
+        const file = Fs.readFileSync(this.testfile).toString();
+        const contents = '[INF] [App] Second Test\r\n';
+        Assert.strictEqual(file, contents);
+    });
+
+    it('erases the log file', async function() {
+        await this.filelogger.clear();
+        const exists = Fs.existsSync(this.testfile);
+        Assert.strictEqual(exists, false);
+    });
+
+    it('deletes the log file', async function() {
+        await this.filelogger.info("Delete Test");
+        this.filelogger.delete();
+        const exists = Fs.existsSync(this.testfile);
+        Assert.strictEqual(exists, false);
+    });
+
+    it('does not log if disabled', async function() {
+        this.filelogger.enabled = false;
+        await this.filelogger.info("Test");
+        const exists = Fs.existsSync(this.testfile);
+        Assert.strictEqual(exists, false);
+    });
+
+    it('logs to the colletion', async function() {
+        await this.mongologger.info("Test 1");
+        const data = await this.collection.findOne();
+        Assert.strictEqual(data.context, '');
+        Assert.strictEqual(data.level, '[INF] ');
+        Assert.strictEqual(data.name, '[App] ');
+        Assert.strictEqual(data.text, 'Test 1');
+        Assert.strictEqual(data.timestamp, '');
+    });
+
+    it('deletes the first document', async function() {
+        await this.mongologger.info("Test 2");
+        await this.mongologger.deleteFirstDocument();
+        const data = await this.collection.findOne();
+        Assert.strictEqual(data.context, '');
+        Assert.strictEqual(data.level, '[INF] ');
+        Assert.strictEqual(data.name, '[App] ');
+        Assert.strictEqual(data.text, 'Test 2');
+        Assert.strictEqual(data.timestamp, '');
+    });
+
+    it('clears the colletion', async function() {
+        await this.mongologger.clear();
+        const data = await this.collection.findOne();
+        Assert.strictEqual(data, undefined);
+    });
 });

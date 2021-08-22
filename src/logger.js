@@ -1,426 +1,297 @@
+if(typeof module !== "undefined"){
+    LoggerMessage = require('./LoggerMessage');
+}
+
 /**
  * Logs messages and objects to the console.
  * 
  * @example - create a basic logger
- * let logger = new Logger("User", {
- *     level: Logger.level.debug,
- *     timestamp: {
- *         state: true,
- *         format: Logger.timestamp.local    
- *     }
+ * const logger = new Logger("User", {
+ *     level: LoggerMessage.level.debug,
+ *     timestamp: LoggerMessage.timestamp.local    
  * });
  * logger.debug("Logged in"); // [7/1/2019, 10:43:26 AM] [DBG] [User] Logged in
  * 
  * @example - create a logger as part of an object "Foo"
  * this.logger = new Logger("App", {
- *     level: Logger.level.info,
- *     timestamp: {state: false}
+ *     level: LoggerMessage.level.info,
+ *     timestamp: false
  *     context: this
  * });
  * logger.info("Initialized"); // [INF] [App] [Foo] Initialized
  * 
  * @example - when logging an object, the object itself is passed to console.log()
  * logger.info({name: "Test", count: 100}); // [INF] [App] logging object
- *                                          // {name:"Test", count:100}
+ *                                          // {name: "Test", count: 100}
  */
 class Logger {
 
     /**
-    * Constructor
-    * @param {string} name - name of the logger
-    * @param {object} [options={}] 
-    * @param {number} [options.level=Logger.level.info] - starting log level
-    * @param {object|boolean} [options.timestamp] - timestamp options, or boolean for default time format
-    * @param {boolean} [options.objectsToString=false] - whether to print objects using .toString()
-    * @param {boolean} [options.timestamp.state=false] - whether to print timestamps
-    * @param {number} [options.timestamp.format=Logger.timestamp.locale] - timestamp format
-    * @param {string} [options.context=null] - optional context appended after logger name
-    * @return {Logger}
-    */
-    constructor(name, options = {}){
+     * Constructor
+     * @param {String} name - Name of the logger
+     * @param {Object} [params={}] 
+     * @param {Number|String} [params.level=LoggerMessage.level.info] - Starting log level
+     * @param {Boolean} [params.enabled=true] - Whether the logger is enabled
+     * @param {String} [params.context=null] - Optional context appended after logger name
+     * @param {Boolean|Number|String} [params.timestamp=LoggerMessage.timestamp.locale] - Timestamp format
+     * @param {Number} [params.maxlogs=0] - Maximum number of logs until the first log is deleted
+     * @param {Boolean} [params.objects_to_string=false] - Whether to log plain objects as a string
+     */
+    constructor(name, {
+        level = LoggerMessage.level.info,
+        enabled = true,
+        context = null,
+        timestamp = LoggerMessage.timestamp.locale,
+        maxlogs = 0,
+        objects_to_string = false
+    }={})
+    {
         this.name = name;
-        this.enabled = true;
-        this.options = {
-            level: Logger.level.info,
-            context: null,
-            objectsToString: false,
-            timestamp: {
-                state: false,
-                format: Logger.timestamp.locale
-            }
-        };
-        Object.extend(this.options, options);
-        this.setLevel(this.options.level);
-        this.setTimestamp(this.options.timestamp);
-        return this;
-    }
-
-    /**
-     * Get the logger's enabled state.
-     * @returns {boolean} true if enabled
-     */
-    getEnabled(){
-        return this.enabled;
-    }
-
-    /**
-     * Set the logger's enabled state.
-     * @param {boolean} enabled 
-     * @returns {Logger}
-     */
-    setEnabled(enabled){
+        this.level = level;
         this.enabled = enabled;
-        return this;
+        this.context = context;
+        this.timestamp = timestamp;
+        this.maxlogs = maxlogs;
+        this.objects_to_string = objects_to_string;
+        this.log_count = 0;
     }
 
     /**
-     * Enable the logger
-     * @returns {Logger}
+     * Get the timestamp
      */
-    enable(){
-        return this.setEnabled(true);
+    get timestamp(){
+        return this._timestamp;
     }
 
     /**
-     * Disable the logger
-     * @returns {Logger}
+     * Set the timestamp format
+     * @param {Boolean|Number|String} timestamp
      */
-    disable(){
-        return this.setEnabled(false);
+    set timestamp(timestamp){
+        if(typeof timestamp === "boolean" && !timestamp){
+            this.timestamp = null;
+        }
+        else if(typeof timestamp === "string"){
+            timestamp = LoggerMessage.timestamp.stringmap.get(timestamp);
+        }
+        this._timestamp = timestamp;
     }
 
     /**
-     * Set the logger name, which appears
-     * as the first item in the message after timestamp.
-     * @param {string} name 
+     * Get the level
      */
-    setName(name){
-        this.name = name;
-        return this;
+    get level(){
+        return this._level;
     }
 
     /**
-    * Set the log level.
-    * This will immediately change the logger's log level.
-    * @param {number} level 
-    * @return {Logger}
-    */
-    setLevel(level){
+     * Set the level
+     * @param {Number|String} level
+     */
+    set level(level){
+        if(typeof level === "boolean" && !level){
+            this.enabled = false;
+        }
+        else if(typeof level === "string"){
+            level = LoggerMessage.level.stringmap.get(level);
+        }
+        this._level = level;
+    }
+
+    /**
+     * Create a log message.
+     * @param {String} text - message to log
+     * @param {Number} level - log level
+     * @return {String}
+     */
+    createMessage(text, level){
+        return new LoggerMessage({
+            context: this.context,
+            level: level,
+            name: this.name,
+            text: text, 
+            timestamp: this.timestamp
+        });
+    }
+
+    /**
+     * Log a message. Will do nothing if the current
+     * log level is greater than the specified one.
+     * @param {LoggerMessage|Object|String} message - message to log
+     * @param {Number|String} [level=this.level] - log level; current level by default
+     * @return {Promise}
+     */
+    async log(message, level = this._level){
+        if(!this.enabled){
+            return;
+        }
+
+        // If set as a string, ie "verbose", convert to enum value
         if(typeof level === "string"){
-            level = Logger.level.stringmap.get(level);
-        }
-        
-        if(!Logger.level.isValidLevel(level)){
-            console.error("Failed to set level: invalid level");
-            return this;
+            level = LoggerMessage.level.stringmap.get(level);
         }
 
-        this.options.level = level;
-        return this;
-    }
-
-    /**
-    * Set any timestamp options
-    * @param {object|boolean} options - options or true to use default timestamp
-    * @param {boolean} [options.state] - whether to print timestamps
-    * @param {number} [options.format] - timestamp format
-    * @return {Logger}
-    */
-    setTimestamp(options){
-        if(typeof options === "boolean"){
-            this.options.timestamp = {
-                state: options,
-                format: Logger.timestamp.locale
-            };
-        }
-        this.setTimestampState(this.options.timestamp.state);
-        this.setTimestampFormat(this.options.timestamp.format);
-        return this;
-    }
-    
-    /**
-     * Set the timestamp printing state
-     * @param {boolean} state 
-     * @return {Logger}
-     */
-    setTimestampState(state){
-        this.options.timestamp.state = state;
-        return this;
-    }
-
-    /**
-    * Set the timestamp format
-    * @param {number} format 
-    * @return {Logger}
-    */
-    setTimestampFormat(format){
-        if(typeof format === "string"){
-            format = Logger.timestamp.stringmap.get(format);
-        }
-        
-        if(!Logger.timestamp.isValidTimestamp(format)){
-            console.error("Failed to set timestamp: invalid format");
-            return this;
-        }
-
-        switch(format){
-            case Logger.timestamp.utc:
-                this.appendTimestamp = this.appendUtcTimestamp;
-                break;
-            case Logger.timestamp.localedate:
-                this.appendTimestamp = this.appendLocaleDateTimestamp
-                break;
-            case Logger.timestamp.localetime:
-                this.appendTimestamp = this.appendLocaleTimeTimestamp
-                break;
-            case Logger.timestamp.locale:
-            default:
-                this.appendTimestamp = this.appendLocaleTimestamp;
-                break;
-        }
-        return this;
-    }
-
-    /**
-    * Set a custom timestamp format.
-    * @param {function} func - function that outputs a timestamp string
-    * @return {Logger}
-    */
-    setCustomTimestampFormat(func){
-        this.appendTimestamp = func;
-        return this;
-    }
-
-    /**
-    * Append a UTC timestamp.
-    * eg "Mon, 01 Jul 2019 14:43:35 GMT"
-    * @return {Logger}
-    */
-    appendUtcTimestamp(){
-        return `[${(new Date().toUTCString())}] `;
-    }
-
-    /**
-    * Append a locale timestamp.
-    * eg "7/1/2019, 10:43:26 AM"
-    * @return {Logger}
-    */
-    appendLocaleTimestamp(){
-        return `[${(new Date().toLocaleString())}] `;
-    }
-
-    /**
-    * Append a locale time timestamp.
-    * eg "10:43:06 AM"
-    * @return {Logger}
-    */
-    appendLocaleTimeTimestamp(){
-        return `[${(new Date().toLocaleTimeString())}] `;
-    }
-
-    /**
-    * Append a locale date timestamp.
-    * eg "7/1/2019"
-    * @return {Logger}
-    */
-    appendLocaleDateTimestamp(){
-        return `[${(new Date().toLocaleDateString())}] `;
-    }
-
-    /**
-    * Create a log message.
-    * @param {string} message - message to log
-    * @param {number} level - log level
-    * @return {Logger}
-    */
-    createMessage(message, level){
-        let msg = "";
-        if(this.options.timestamp.state){
-            msg += this.appendTimestamp();
-        }
-
-        msg += `[${Logger.level.string[level]}] `;
-        msg += `[${this.name}] `;
-
-        if(this.options.context){
-            msg += `[${this.options.context}] `;
+        // Check current log level
+        if(level < this._level){
+            return;
         }
 
         if(typeof message === "string"){
-            msg += message;
+            message = this.createMessage(message, level);
         }
-
-        return msg;
-    }
-
-    /**
-    * Log a message. Will do nothing if the current
-    * log level is greater than the specified one.
-    * @param {string} message - message to log
-    * @param {number|string} [level=this.options.level] - log level; current level by default
-    * @return {Logger}
-    */
-    log(message, level = this.options.level){
-        if(!this.enabled){
-            return this;
-        }
-
-        if(typeof level === "string"){
-            level = Logger.level.stringmap.get(level);
-        }
-
-        if(level < this.options.level){
-            return this;
-        }
-
-        let msg = (typeof message === "string")
-            ? this.createMessage(message, level)
-            : message;
-            
-        return this.logMessage(msg);
-    }
-
-    /**
-    * Log a message. 
-    * This is the actual log output function.
-    * @param {string} message - message to log
-    * @return {Logger}
-    */
-    logMessage(message){
-        if(typeof message === "object" && this.options.objectsToString){
-            console.log(message.toString());
-        }
-        else {
-            console.log(message);
-        }
-        return this;
-    }
-
-    /**
-    * Log a verbose message.
-    * Use this level when logging relatively
-    * unimportant information. Especially useful
-    * when debugging program flow.
-    * @param {string} message 
-    * @return {Logger}
-    */
-    verbose(message){
-        return this.log(message, Logger.level.verbose);
-    }
-
-    /**
-    * Log a debug message
-    * @param {string} message 
-    * @return {Logger}
-    */
-    debug(message){
-        return this.log(message, Logger.level.debug);
-    }
-
-    /**
-    * Log an info message
-    * @param {string} message 
-    * @return {Logger}
-    */
-    info(message){
-        return this.log(message, Logger.level.info);
-    }
-
-    /**
-    * Log a warning message
-    * @param {string} message 
-    * @return {Logger}
-    */
-    warning(message){
-        return this.log(message, Logger.level.warning);
-    }
-
-    /**
-    * Log an error message
-    * @param {string} message 
-    * @return {Logger}
-    */
-    error(message){
-        return this.log(message, Logger.level.error);
-    }
-}
-Logger.level = {
-    verbose: 0,
-    debug: 1,
-    info: 2,
-    warning: 3,
-    error: 4,
-    string: [
-        "VRB",
-        "DBG",
-        "INF",
-        "WRN",
-        "ERR"
-    ]
-};
-
-/**
- * Map of strings to Logger levels
- */
-Logger.level.stringmap = new Map()
-    .set("verbose", Logger.level.verbose)
-    .set("debug", Logger.level.debug)
-    .set("info", Logger.level.info)
-    .set("warning", Logger.level.warning)
-    .set("error", Logger.level.error);
-
-/**
- * Check if the log level is valid
- * @param {number} level 
- * @return {boolean}
- */
-Logger.level.isValidLevel = function(level){
-    return level >= Logger.level.verbose && level <= Logger.level.error;
-};
-
-Logger.timestamp = {
-    utc: 0,
-    locale: 1,
-    localetime: 2,
-    localedate: 3
-};
-
-/**
- * Map of strings to Logger timestamps
- */
-Logger.timestamp.stringmap = new Map()
-    .set("utc", Logger.timestamp.utc)
-    .set("locale", Logger.timestamp.locale)
-    .set("localetime", Logger.timestamp.localetime)
-    .set("localedate", Logger.timestamp.localedate);
-
-/**
- * Check if the timestamp is valid
- * @param {number} timestamp 
- * @return {boolean}
- */
-Logger.timestamp.isValidTimestamp = function(timestamp){
-    return timestamp >= Logger.timestamp.utc && timestamp <= Logger.timestamp.localedate;
-};
-
-if(typeof Object.extend != 'function'){
-    Object.extend = function(){
-        for(let i = 1; i < arguments.length; i++){
-            for(let key in arguments[i]){
-                if(arguments[i].hasOwnProperty(key)) { 
-                    if(!arguments[0]){
-                        continue;
-                    }
-                    if (typeof arguments[0][key] === 'object' && typeof arguments[i][key] === 'object') {
-                        Object.extend(arguments[0][key], arguments[i][key]);
-                    }
-                    else{
-                        arguments[0][key] = arguments[i][key];
-                    }
-                }
+        else if (typeof message === "object" && !(message instanceof LoggerMessage)){
+            if(this.objects_to_string){
+                message = this.createMessage(JSON.stringify(message), level);
             }
         }
-        return arguments[0];	
+
+        await this.checkLogCount();
+
+        this.log_count++;
+
+        return this.logToLevel(message, level);
+    }
+
+    /**
+     * Log to the appropriate output level
+     * @param {LoggerMessage|Object|String} message - message to log
+     * @param {Number|String} [level=this.level] - log level; current level by default
+     * @returns {Promise}
+     */
+    async logToLevel(message, level){
+        switch(level){
+            case LoggerMessage.level.verbose:
+                await this._verbose(message);
+                break;
+            case LoggerMessage.level.debug:
+                await this._debug(message);
+                break;
+            case LoggerMessage.level.info:
+                await this._info(message);
+                break;
+            case LoggerMessage.level.warning:
+                await this._warning(message);
+                break;
+            case LoggerMessage.level.error:
+                await this._error(message);
+                break;
+        }
+    }
+
+    /**
+     * The output function to log a verbose message.
+     * @param {LoggerMessage|Object} message 
+     * @returns {Promise}
+     */
+    async _verbose(message){
+        if(message instanceof LoggerMessage){
+            message = message.toString();
+        }
+        console.log(message);
+    }
+
+    /**
+     * Log a verbose message.
+     * Use this level when logging relatively
+     * unimportant information. Especially useful
+     * when debugging program flow.
+     * @param {String} message  
+     * @returns {Promise}
+     */
+    async verbose(message){
+        await this.log(message, LoggerMessage.level.verbose);
+    }
+
+    /**
+     * The output function to log a debug message.
+     * @param {LoggerMessage|Object} message  
+     * @returns {Promise}
+     */
+    async _debug(message){
+        if(message instanceof LoggerMessage){
+            message = message.toString();
+        }
+        console.debug(message);
+    }
+
+    /**
+     * Log a debug message
+     * @param {String} message  
+     * @returns {Promise}
+     */
+    async debug(message){
+        await this.log(message, LoggerMessage.level.debug);
+    }
+
+    /**
+     * The output function to log an info message.
+     * @param {LoggerMessage|Object} message  
+     * @returns {Promise}
+     */
+    async _info(message){
+        if(message instanceof LoggerMessage){
+            message = message.toString();
+        }
+        console.info(message);
+    }
+
+    /**
+     * Log an info message
+     * @param {String} message 
+     * @return {Promise}
+     */
+    async info(message){
+        await this.log(message, LoggerMessage.level.info);
+    }
+
+    /**
+     * The output function to log a warning message.
+     * @param {LoggerMessage|Object} message  
+     * @returns {Promise}
+     */
+    async _warning(message){
+        if(message instanceof LoggerMessage){
+            message = message.toString();
+        }
+        console.warn(message);
+    }
+
+    /**
+     * Log a warning message
+     * @param {String} message 
+     * @returns {Promise}
+     */
+    async warning(message){
+        await this.log(message, LoggerMessage.level.warning);
+    }
+
+    /**
+     * The output function to log an error message.
+     * @param {LoggerMessage|Object} message  
+     * @returns {Promise}
+     */
+    async _error(message){
+        if(message instanceof LoggerMessage){
+            message = message.toString();
+        }
+        console.error(message);
+    }
+
+    /**
+     * Log an error message
+     * @param {String} message 
+     * @returns {Promise}
+     */
+    async error(message){
+        await this.log(message, LoggerMessage.level.error);
+    }
+
+    /**
+     * Check the number of logs and do something if necessary.
+     * @returns {Promise}
+     */
+    async checkLogCount(){
+
     }
 }
 
