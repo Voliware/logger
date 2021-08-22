@@ -2,7 +2,7 @@ const EOL = require('os').EOL;
 const FirstLineTransform = require('./firstLineTransform');
 const Fs = require('fs');
 const Logger = require('./logger');
-const LoggerMessage = require('./LoggerMessage');
+const LoggerMessage = require('./loggerMessage');
 
 /**
  * Logs to a file
