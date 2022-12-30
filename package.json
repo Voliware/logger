@@ -27,7 +27,7 @@
   "license": "MIT",
   "devDependencies": {
     "@voliware/node-build": "^1.7.3",
-    "mocha": "^6.2.1",
+    "mocha": "^10.2.0",
     "mongodb": "^4.1.0"
   }
 }
